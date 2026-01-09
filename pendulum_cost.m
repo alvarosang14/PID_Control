@@ -1,6 +1,8 @@
 function F = pendulum_cost(params, y)
-% Función de coste para péndulo invertido con 3 parámetros
+% Cost function for inverted pendulum with 3 parameters
 % params = [Kp_pos, Kd_pos, K_angle]
+%
+% Returns: F - cost value (lower is better)
 
 persistent eval_count best_cost;
 if isempty(eval_count)
@@ -9,38 +11,40 @@ if isempty(eval_count)
 end
 eval_count = eval_count + 1;
 
+% Extract parameters
 Kp = params(1);
 Kd = params(2);
 K_angle = params(3);
 
-% Validación (debe coincidir con XVmin y XVmax)
+% Parameter validation (must match XVmin and XVmax bounds)
 if (Kp < 0 || Kp > 15 || Kd < 0 || Kd > 8 || K_angle < 0 || K_angle > 100)
-    F = 10e6;
-else
-    % Configurar parámetros
-    assignin('base', 'Kp_pos', Kp);
-    assignin('base', 'Kd_pos', Kd);
-    assignin('base', 'K_angle', K_angle);
-    
-    % Simular
-    simOut = sim('rct_pendulum', 'StopTime', '12');
-    
-    % Extraer señales (son arrays directos)
-    x = simOut.x;
-    xref = simOut.xref;
-    theta = simOut.Theta;
-    
-    % Función de coste
-    F = sum(abs(x - xref)) + 50*sum(abs(theta));
-    
-    % Mostrar progreso
-    if F < best_cost
-        best_cost = F;
-        fprintf('  🎯 Eval %4d - MEJOR: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
-                eval_count, F, Kp, Kd, K_angle);
-    elseif mod(eval_count, 10) == 0
-        fprintf('  ... Eval %4d - Coste: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
-                eval_count, F, Kp, Kd, K_angle);
-    end
-    
+    F = 1e7;  % Penalty for out-of-bounds parameters
+    return;
+end
+
+% Set parameters in base workspace
+assignin('base', 'Kp_pos', Kp);
+assignin('base', 'Kd_pos', Kd);
+assignin('base', 'K_angle', K_angle);
+
+% Run simulation
+simOut = sim('rct_pendulum', 'StopTime', '12');
+
+% Extract signals
+x = simOut.x;           % Cart position
+xref = simOut.xref;     % Reference position
+theta = simOut.Theta;   % Pendulum angle
+
+% Calculate cost function
+% Minimize position error and angle deviation
+F = sum(abs(x - xref)) + 50*sum(abs(theta));
+
+% Display progress
+if F < best_cost
+    best_cost = F;
+    fprintf('  [BEST] Eval %4d - Cost: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
+            eval_count, F, Kp, Kd, K_angle);
+elseif mod(eval_count, 10) == 0
+    fprintf('         Eval %4d - Cost: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
+            eval_count, F, Kp, Kd, K_angle);
 end
