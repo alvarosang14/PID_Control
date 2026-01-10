@@ -4,8 +4,10 @@
 % Optimizes 3 parameters: Kp_pos, Kd_pos, K_angle
 % Uses the DE algorithm (devec3) to find optimal controller gains
 
-clear;
+clear all;      % ← AÑADE ESTO
+close all;
 clc;
+
 
 % -------------------------------------------------------------------------
 % OPTIMIZATION PARAMETERS
@@ -14,17 +16,17 @@ VTR = 1.e-6;            % Value to reach (stopping criterion)
 D = 3;                  % Number of parameters to optimize
 
 % Parameter bounds
-XVmin = [0, 0, 0];      % [Kp_min, Kd_min, K_angle_min]
-XVmax = [15, 8, 100];   % [Kp_max, Kd_max, K_angle_max]
+XVmin = [0, 0, 0];
+XVmax = [20, 15, 5000];   % Mucho más amplio
 
 y = [0, 0, 0];          % Additional data (not used)
 
 % DE algorithm parameters
-NP = 50;                % Population size (reduce to 30 for faster testing)
-itermax = 30;           % Maximum iterations (reduce to 20 for testing)
+NP = 80;                % Population size (reduce to 30 for faster testing)
+itermax = 50;           % Maximum iterations (reduce to 20 for testing)
 F = 0.8;                % Differential weight [0.5, 1.0]
 CR = 0.9;               % Crossover probability [0, 1]
-strategy = 7;           % DE/rand/1/bin strategy
+strategy = 1;           % DE/rand/1/bin strategy
 refresh = 5;            % Display progress every N iterations
 
 % -------------------------------------------------------------------------
@@ -89,7 +91,7 @@ figure('Name', 'Optimization Results', 'NumberTitle', 'off');
 % Cart position
 subplot(2,2,1);
 plot(simOut.tout, simOut.xref, 'b--', simOut.tout, simOut.x, 'r-', 'LineWidth', 1.5);
-legend('Reference', 'Position', 'Location', 'best');
+legend('Reference', 'Position');
 xlabel('Time (s)');
 ylabel('Position (m)');
 title('Cart Position');
