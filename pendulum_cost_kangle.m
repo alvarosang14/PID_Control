@@ -1,52 +1,77 @@
-function F = pendulum_cost(params, y)
-% Cost function for inverted pendulum with 3 parameters
-% params = [Kp_pos, Kd_pos, K_angle]
-%
-% Returns: F - cost value (lower is better)
-% set_param('rct_pendulum', 'SimMechanicsOpenEditorOnUpdate', 'on');
-%save_system('rct_pendulum');
-persistent eval_count best_cost;
+function F = pendulum_cost_PID(params, y)
+% Coste para péndulo invertido con PID de posición + K_angle
+% params = [Kp_pos, Ki_pos, Kd_pos, K_angle]
+
+persistent eval_count best_cost
 if isempty(eval_count)
     eval_count = 0;
     best_cost = inf;
 end
 eval_count = eval_count + 1;
 
-% Extract parameters
-Kp = params(1);
-Kd = params(2);
-K_angle = params(3);
+%% Extraer parámetros
+Kp_pos  = params(1);
+Ki_pos  = params(2);
+Kd_pos  = params(3);
+K_angle = params(4);
 
-% Parameter validation (must match XVmin and XVmax bounds)
-if (Kp < 0 || Kp > 20 || Kd < 0 || Kd > 15 || K_angle < 0 || K_angle > 5000)
-    F = 10e6;
+%% Validación de rangos (deben coincidir con XVmin/XVmax)
+if (Kp_pos  < 0 || Kp_pos  > 20 || ...
+    Ki_pos  < 0 || Ki_pos  > 10 || ...
+    Kd_pos  < 0 || Kd_pos  > 15 || ...
+    K_angle < 0 || K_angle > 5000)
+
+    F = 1e6;
     return;
 end
 
-% Set parameters in base workspace
-assignin('base', 'Kp_pos', Kp);
-assignin('base', 'Kd_pos', Kd);
-assignin('base', 'K_angle', K_angle);
+%% Asignar al workspace
+assignin('base','Kp_pos',  Kp_pos);
+assignin('base','Ki_pos',  Ki_pos);
+assignin('base','Kd_pos',  Kd_pos);
+assignin('base','K_angle', K_angle);
 
-% Run simulation
-simOut = sim('rct_pendulum', 'StopTime', '12');
+%% Simulación
+try
+    simOut = sim('rct_pendulum', 'StopTime','12', ...
+                 'ReturnWorkspaceOutputs','on');
+catch
+    F = 1e6;
+    return;
+end
 
-% Extract signals
-x = simOut.x;           % Cart position
-xref = simOut.xref;     % Reference position
-theta = simOut.Theta;   % Pendulum angle
+%% Extraer señales
+x     = simOut.x(:);        % Posición del carro
+xref  = simOut.xref(:);     % Referencia
+theta = simOut.Theta(:);    % Ángulo (rad)
+t     = simOut.tout(:);
 
-% Calculate cost function
-% Minimize position error and angle deviation
-%F = sum(abs(x - xref)) + 50*sum(abs(theta));
-F = sum(abs(x - xref)) + 200*sum(abs(theta));
+if length(t) < 2
+    F = 1e6;
+    return;
+end
 
-% Display progress
+dt = t(2) - t(1);
+
+%% Coste
+% Error de posición (ITAE)
+e_pos = abs(x - xref);
+J_pos = sum(t .* e_pos) * dt;
+
+% Penalización por ángulo (mantener vertical)
+J_ang = sum(abs(theta)) * dt;
+
+% Coste total
+F = J_pos + 200 * J_ang;
+
+%% Logging básico
 if F < best_cost
     best_cost = F;
-    fprintf('  [BEST] Eval %4d - Cost: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
-            eval_count, F, Kp, Kd, K_angle);
-elseif mod(eval_count, 10) == 0
-    fprintf('         Eval %4d - Cost: %.4f | Kp=%.3f, Kd=%.3f, Ka=%.3f\n', ...
-            eval_count, F, Kp, Kd, K_angle);
+    fprintf('BEST | Eval %4d | F %.4f | Kp %.3f Ki %.3f Kd %.3f Ka %.1f\n', ...
+        eval_count, F, Kp_pos, Ki_pos, Kd_pos, K_angle);
+elseif mod(eval_count, 20) == 0
+    fprintf('Eval %4d | F %.4f | Kp %.3f Ki %.3f Kd %.3f Ka %.1f\n', ...
+        eval_count, F, Kp_pos, Ki_pos, Kd_pos, K_angle);
+end
+
 end

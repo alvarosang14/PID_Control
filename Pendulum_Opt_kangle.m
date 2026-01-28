@@ -1,130 +1,110 @@
 % =========================================================================
-% INVERTED PENDULUM OPTIMIZATION USING DIFFERENTIAL EVOLUTION
+% OPTIMIZACIÓN DEL PÉNDULO INVERTIDO CON PID (POSITION) + K_angle
 % =========================================================================
-% Optimizes 3 parameters: Kp_pos, Kd_pos, K_angle
-% Uses the DE algorithm (devec3) to find optimal controller gains
 
-clear all;      % ← AÑADE ESTO
+clear;
 close all;
 clc;
 
+model_name = 'rct_pendulum';
 
+%% ------------------------------------------------------------------------
+% PARÁMETROS DE OPTIMIZACIÓN
 % -------------------------------------------------------------------------
-% OPTIMIZATION PARAMETERS
+VTR = 1e-6;          % Criterio de parada
+D   = 4;             % [Kp_pos, Ki_pos, Kd_pos, K_angle]
+
+XVmin = [0,   0,   0,     0];
+XVmax = [20,  10,  15,  5000];
+
+y = [0 0 0 0];
+
+NP       = 80;
+itermax = 50;
+F        = 0.8;
+CR       = 0.9;
+strategy = 7;        % DE/rand/1/bin
+refresh  = 5;
+
+%% ------------------------------------------------------------------------
+% INICIALIZACIÓN
 % -------------------------------------------------------------------------
-VTR = 1.e-6;            % Value to reach (stopping criterion)
-D = 3;                  % Number of parameters to optimize
+load_system(model_name);
 
-% Parameter bounds
-XVmin = [0, 0, 0];
-XVmax = [20, 15, 5000];   % Mucho más amplio
+fprintf('=============================================\n');
+fprintf('OPTIMIZACIÓN PÉNDULO INVERTIDO (PID + K_angle)\n');
+fprintf('Parámetros: Kp_pos, Ki_pos, Kd_pos, K_angle\n');
+fprintf('=============================================\n');
 
-y = [0, 0, 0];          % Additional data (not used)
-
-% DE algorithm parameters
-NP = 80;                % Population size (reduce to 30 for faster testing)
-itermax = 50;           % Maximum iterations (reduce to 20 for testing)
-F = 0.8;                % Differential weight [0.5, 1.0]
-CR = 0.9;               % Crossover probability [0, 1]
-strategy = 1;           % DE/rand/1/bin strategy
-refresh = 5;            % Display progress every N iterations
-
-% -------------------------------------------------------------------------
-% INITIALIZATION
-% -------------------------------------------------------------------------
-load_system('rct_pendulum');
-
-fprintf('=======================================================\n');
-fprintf('INVERTED PENDULUM OPTIMIZATION\n');
-fprintf('=======================================================\n');
-fprintf('Parameters to optimize: 3 (Kp_pos, Kd_pos, K_angle)\n');
-fprintf('Population size: %d\n', NP);
-fprintf('Max iterations: %d\n', itermax);
-fprintf('Kp range: [%.1f, %.1f]\n', XVmin(1), XVmax(1));
-fprintf('Kd range: [%.1f, %.1f]\n', XVmin(2), XVmax(2));
-fprintf('K_angle range: [%.1f, %.1f]\n', XVmin(3), XVmax(3));
-fprintf('=======================================================\n\n');
-
-% -------------------------------------------------------------------------
-% RUN OPTIMIZATION
+%% ------------------------------------------------------------------------
+% EJECUCIÓN DE LA OPTIMIZACIÓN
 % -------------------------------------------------------------------------
 tic;
-[x, f, nf] = devec3('pendulum_cost', VTR, D, XVmin, XVmax, y, NP, itermax, F, CR, strategy, refresh);
+[x, f, nf] = devec3( ...
+    'pendulum_cost_kangle', ...
+    VTR, D, XVmin, XVmax, y, ...
+    NP, itermax, F, CR, strategy, refresh);
 tiempo_total = toc;
 
+%% ------------------------------------------------------------------------
+% RESULTADOS
 % -------------------------------------------------------------------------
-% DISPLAY RESULTS
+Kp_pos  = x(1);
+Ki_pos  = x(2);
+Kd_pos  = x(3);
+K_angle = x(4);
+
+fprintf('\nRESULTADOS ÓPTIMOS:\n');
+fprintf('Kp_pos  = %.6f\n', Kp_pos);
+fprintf('Ki_pos  = %.6f\n', Ki_pos);
+fprintf('Kd_pos  = %.6f\n', Kd_pos);
+fprintf('K_angle = %.6f\n', K_angle);
+fprintf('Coste   = %.6e\n', f);
+fprintf('Evaluaciones = %d\n', nf);
+fprintf('Tiempo = %.2f s\n', tiempo_total);
+
+%% ------------------------------------------------------------------------
+% SIMULACIÓN DE VERIFICACIÓN
 % -------------------------------------------------------------------------
-fprintf('\n=======================================================\n');
-fprintf('OPTIMIZATION COMPLETED\n');
-fprintf('=======================================================\n');
-fprintf('Total time: %.1f seconds (%.1f minutes)\n', tiempo_total, tiempo_total/60);
-fprintf('Function evaluations: %d\n', nf);
-fprintf('Best cost: %.4e\n\n', f);
+assignin('base','Kp_pos',  Kp_pos);
+assignin('base','Ki_pos',  Ki_pos);
+assignin('base','Kd_pos',  Kd_pos);
+assignin('base','K_angle', K_angle);
 
-Kp = x(1);
-Kd = x(2);
-K_angle = x(3);
+set_param(model_name,'StopTime','12');
+simOut = sim(model_name,'ReturnWorkspaceOutputs','on');
 
-fprintf('OPTIMAL PARAMETERS:\n');
-fprintf('  Kp_pos    = %.4f\n', Kp);
-fprintf('  Kd_pos    = %.4f\n', Kd);
-fprintf('  K_angle   = %.4f\n', K_angle);
-fprintf('=======================================================\n\n');
-
+%% ------------------------------------------------------------------------
+% GRÁFICAS
 % -------------------------------------------------------------------------
-% VERIFICATION SIMULATION
-% -------------------------------------------------------------------------
-assignin('base', 'Kp_pos', Kp);
-assignin('base', 'Kd_pos', Kd);
-assignin('base', 'K_angle', K_angle);
+figure;
 
-fprintf('Running verification simulation...\n');
-simOut = sim('rct_pendulum', 'StopTime', '12');
-
-% -------------------------------------------------------------------------
-% GENERATE PLOTS
-% -------------------------------------------------------------------------
-fprintf('Generating plots...\n');
-figure('Name', 'Optimization Results', 'NumberTitle', 'off');
-
-% Cart position
 subplot(2,2,1);
-plot(simOut.tout, simOut.xref, 'b--', simOut.tout, simOut.x, 'r-', 'LineWidth', 1.5);
-legend('Reference', 'Position');
-xlabel('Time (s)');
-ylabel('Position (m)');
-title('Cart Position');
+plot(simOut.tout, simOut.xref, 'k--', simOut.tout, simOut.x, 'b','LineWidth',1.5);
 grid on;
+xlabel('Tiempo (s)');
+ylabel('Posición (m)');
+title('Posición del carro');
 
-% Pendulum angle
 subplot(2,2,2);
-plot(simOut.tout, simOut.Theta * 180/pi, 'g-', 'LineWidth', 1.5);
-xlabel('Time (s)');
-ylabel('Angle (deg)');
-title('Pendulum Angle');
-yline(0, 'k--', 'Vertical');
+plot(simOut.tout, simOut.Theta*180/pi,'r','LineWidth',1.5);
+yline(0,'k--');
 grid on;
+xlabel('Tiempo (s)');
+ylabel('Ángulo (deg)');
+title('Ángulo del péndulo');
 
-% Control force
 subplot(2,2,3);
-plot(simOut.tout, simOut.F, 'm-', 'LineWidth', 1.5);
-xlabel('Time (s)');
-ylabel('Force (N)');
-title('Control Force');
+plot(simOut.tout, simOut.F,'m','LineWidth',1.5);
 grid on;
+xlabel('Tiempo (s)');
+ylabel('Fuerza (N)');
+title('Señal de control');
 
-% Results summary
 subplot(2,2,4);
 axis off;
-text(0.1, 0.9, 'RESULTS SUMMARY', 'FontSize', 12, 'FontWeight', 'bold');
-text(0.1, 0.75, sprintf('Final cost: %.4e', f), 'FontSize', 10);
-text(0.1, 0.65, sprintf('Kp_{pos}: %.4f', Kp), 'FontSize', 10);
-text(0.1, 0.55, sprintf('Kd_{pos}: %.4f', Kd), 'FontSize', 10);
-text(0.1, 0.45, sprintf('K_{angle}: %.4f', K_angle), 'FontSize', 10);
-text(0.1, 0.35, sprintf('Evaluations: %d', nf), 'FontSize', 10);
-text(0.1, 0.25, sprintf('Time: %.1f min', tiempo_total/60), 'FontSize', 10);
-text(0.1, 0.10, '[OK] Optimization completed', 'FontSize', 10, 'Color', [0 0.6 0]);
-
-fprintf('\n[OK] Optimization finished successfully!\n');
-fprintf('=======================================================\n');
+text(0.1,0.8,sprintf('Coste: %.3e',f));
+text(0.1,0.6,sprintf('Kp = %.3f',Kp_pos));
+text(0.1,0.5,sprintf('Ki = %.3f',Ki_pos));
+text(0.1,0.4,sprintf('Kd = %.3f',Kd_pos));
+text(0.1,0.3,sprintf('K_{angle} = %.1f',K_angle));
