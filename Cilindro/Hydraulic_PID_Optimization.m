@@ -1,6 +1,6 @@
 %% ========================================================================
 %  OPTIMIZACIÓN PID - SISTEMA HIDRÁULICO CON DIFFERENTIAL EVOLUTION
-%  Script principal (sin gráficas, sin comparación con inicial)
+%  Script principal
 %  ========================================================================
 clear; clc; close all;
 
@@ -28,7 +28,7 @@ refresh = 5;
 XP_ref = 0.03;
 assignin('base','XP_ref',XP_ref);
 
-%% Optimización
+%% Optimizacion
 tic;
 [x, f, nf] = devec3('hydraulic_tracklsq', ...
     VTR, D, XVmin, XVmax, y, NP, itermax, F, CR, strategy, refresh);
@@ -44,7 +44,7 @@ fprintf('Ki = %.4f\n', Ki_opt);
 fprintf('Kd = %.4f\n', Kd_opt);
 fprintf('Coste = %.6e\n', f);
 
-%% Simular con óptimo
+%% Simular con optimo
 Kp = Kp_opt;
 Ki = Ki_opt;
 Kd = Kd_opt;

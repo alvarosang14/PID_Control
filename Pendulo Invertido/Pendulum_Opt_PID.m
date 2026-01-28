@@ -1,5 +1,5 @@
 % =========================================================================
-% OPTIMIZACIÓN DEL PÉNDULO INVERTIDO - PID (Kp, Ki, Kd)
+% OPTIMIZACIÓN DEL PENDULO INVERTIDO - PID (Kp, Ki, Kd)
 % =========================================================================
 % K_angle fijo
 % Differential Evolution optimiza Kp_pos, Ki_pos, Kd_pos
@@ -10,11 +10,11 @@ close all;
 clc;
 
 % -------------------------------------------------------------------------
-% CONFIGURACIÓN
+% CONFIGURACION
 % -------------------------------------------------------------------------
 K_angle_fijo = 1000;
 
-fprintf('OPTIMIZACIÓN PÉNDULO INVERTIDO - PID\n');
+fprintf('OPTIMIZACIÓN PENDULO INVERTIDO - PID\n');
 fprintf('K_angle fijo = %.0f\n\n', K_angle_fijo);
 
 % -------------------------------------------------------------------------
@@ -29,7 +29,7 @@ XVmax = [20,  10,  15];  % [Kp_max, Ki_max, Kd_max]
 y = [0 0 0];
 
 NP = 60;
-itermax = 40;
+itermax = 50;
 F = 0.7;
 CR = 0.5;
 strategy = 7;
@@ -43,7 +43,7 @@ load_system('rct_pendulum');
 set_param('rct_pendulum/Angle Controller', 'Gain', num2str(K_angle_fijo));
 save_system('rct_pendulum');
 
-fprintf('Modelo cargado. Iniciando optimización...\n\n');
+fprintf('Modelo cargado. Iniciando optimizacion...\n\n');
 
 % -------------------------------------------------------------------------
 % OPTIMIZACIÓN
@@ -78,7 +78,7 @@ assignin('base','Kd_pos',Kd_opt);
 simOut = sim('rct_pendulum','StopTime','12');
 
 % -------------------------------------------------------------------------
-% GRÁFICAS
+% GRAFICAS
 % -------------------------------------------------------------------------
 figure('Position',[100 100 1400 800]);
 
@@ -112,7 +112,7 @@ xlabel('Tiempo (s)')
 ylabel('Error (m)')
 title('Error de posición')
 
-sgtitle('Péndulo invertido - PID optimizado con Differential Evolution');
+sgtitle('Pendulo invertido - PID optimizado con Differential Evolution');
 
 % -------------------------------------------------------------------------
 % GUARDAR RESULTADOS

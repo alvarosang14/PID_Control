@@ -1,9 +1,9 @@
 function F = hydraulic_tracklsq(pid, y)
 % HYDRAULIC_TRACKLSQ
-% Función de coste para optimización PID de un sistema hidráulico
+% Función de coste
 % Criterio: ITAE + esfuerzo de control + tiempo de asentamiento
 
-%% CONFIGURACIÓN
+%% configuracion
 LOG = true;
 PENALTY = 1e6;
 model_name = 'SingleActingCylinderWith3WayValve';
@@ -12,12 +12,12 @@ if LOG
     fprintf('[COST] Evaluando PID: Kp=%.3f Ki=%.3f Kd=%.3f\n', pid);
 end
 
-%% PARÁMETROS PID
+%% parametros
 Kp = pid(1);
 Ki = pid(2);
 Kd = pid(3);
 
-%% VALIDACIÓN DE RANGOS
+%% rangos
 if (Kp < 0 || Kp > 2000 || Ki < 0 || Ki > 200 || Kd < 0 || Kd > 100)
     if LOG
         fprintf('[COST] PID fuera de rango. Penalización aplicada.\n');
@@ -26,15 +26,15 @@ if (Kp < 0 || Kp > 2000 || Ki < 0 || Ki > 200 || Kd < 0 || Kd > 100)
     return;
 end
 
-%% ASIGNAR AL WORKSPACE
+%% workspace
 assignin('base','Kp',Kp);
 assignin('base','Ki',Ki);
 assignin('base','Kd',Kd);
 
-%% SIMULACIÓN
+%% simulacion
 try
     if LOG
-        fprintf('[COST] Ejecutando simulación...\n\n');
+        fprintf('[COST] Ejecutando simulacion...\n\n');
     end
 
     simOut = sim(model_name, ...
@@ -49,7 +49,7 @@ catch
     return;
 end
 
-%% EXTRAER POSICIÓN DEL PISTÓN
+%% posicon
 try
     XP = simOut.get('XP_position');
     x  = XP.Data(:);
@@ -65,19 +65,19 @@ catch
     return;
 end
 
-%% REFERENCIA
+%% referencia
 reference = evalin('base','XP_ref');
 dt = t(2) - t(1);
 error = abs(reference - x);
 
-%% COSTE PRINCIPAL (ITAE)
+%% coste
 F = sum(t .* error) * dt;
 
 if LOG
     fprintf('[COST] ITAE = %.6e\n', F);
 end
 
-%% PENALIZACIÓN POR ESFUERZO DE CONTROL
+%% penalizacion coste control
 try
     U = simOut.get('XC');
     u = U.Data(:);
@@ -90,7 +90,7 @@ try
     end
 end
 
-%% PENALIZACIÓN POR TIEMPO DE ASENTAMIENTO
+%% Ppenalizacion asentamiento
 tol = 0.02 * reference;
 idx = find(abs(x - reference) < tol, 1, 'first');
 
@@ -100,21 +100,21 @@ else
     F = F + 1e-3 * t(idx);
 end
 
-%% PENALIZACIONES FÍSICAS
+%% penalizacion fisicas
 
-% Valores no válidos
+% no validos
 if any(isnan(x)) || any(isinf(x))
     F = PENALTY;
     return;
 end
 
-% Límite de carrera
+% limite
 max_position = max(abs(x));
 if max_position > 0.15
     F = F + 1000 * (max_position - 0.15)^2;
 end
 
-% Oscilaciones
+% oscilaciones
 if length(x) > 3
     dx = diff(x);
     sign_changes = sum(abs(diff(sign(dx))) > 1);
@@ -123,7 +123,7 @@ if length(x) > 3
     end
 end
 
-%% RESULTADO
+%% resultado final
 if LOG
     fprintf('[COST] Coste final = %.6e\n', F);
 end

@@ -1,5 +1,5 @@
 % =========================================================================
-% OPTIMIZACIÓN DEL PÉNDULO INVERTIDO CON PID (POSITION) + K_angle
+% OPTIMIZACION DEL PÉNDULO INVERTIDO CON PID (POSITION) + K_angle
 % =========================================================================
 
 clear;
@@ -9,7 +9,7 @@ clc;
 model_name = 'rct_pendulum';
 
 %% ------------------------------------------------------------------------
-% PARÁMETROS DE OPTIMIZACIÓN
+% PARAMETROS DE OPTIMIZACIÓN
 % -------------------------------------------------------------------------
 VTR = 1e-6;          % Criterio de parada
 D   = 4;             % [Kp_pos, Ki_pos, Kd_pos, K_angle]
@@ -32,12 +32,12 @@ refresh  = 5;
 load_system(model_name);
 
 fprintf('=============================================\n');
-fprintf('OPTIMIZACIÓN PÉNDULO INVERTIDO (PID + K_angle)\n');
+fprintf('OPTIMIZACION PÉNDULO INVERTIDO (PID + K_angle)\n');
 fprintf('Parámetros: Kp_pos, Ki_pos, Kd_pos, K_angle\n');
 fprintf('=============================================\n');
 
 %% ------------------------------------------------------------------------
-% EJECUCIÓN DE LA OPTIMIZACIÓN
+% EJECUCION DE LA OPTIMIZACIÓN
 % -------------------------------------------------------------------------
 tic;
 [x, f, nf] = devec3( ...
@@ -64,7 +64,7 @@ fprintf('Evaluaciones = %d\n', nf);
 fprintf('Tiempo = %.2f s\n', tiempo_total);
 
 %% ------------------------------------------------------------------------
-% SIMULACIÓN DE VERIFICACIÓN
+% SIMULACION DE VERIFICACIÓN
 % -------------------------------------------------------------------------
 assignin('base','Kp_pos',  Kp_pos);
 assignin('base','Ki_pos',  Ki_pos);
@@ -75,7 +75,7 @@ set_param(model_name,'StopTime','12');
 simOut = sim(model_name,'ReturnWorkspaceOutputs','on');
 
 %% ------------------------------------------------------------------------
-% GRÁFICAS
+% GRAFICAS
 % -------------------------------------------------------------------------
 figure;
 

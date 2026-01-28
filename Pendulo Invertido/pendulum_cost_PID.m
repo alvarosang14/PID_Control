@@ -1,4 +1,5 @@
 function F = pendulum_cost_PID(params, y)
+% Coste para péndulo invertido con PID de posición
 
 persistent eval_count
 if isempty(eval_count)
@@ -37,7 +38,7 @@ dt = t(2) - t(1);
 
 F = sum(abs(x - xref))*dt + 200*sum(abs(theta))*dt;
 
-% PRINT CADA 10 EVALUACIONES
+% cada 10 imprimo
 if mod(eval_count,10)==0
     fprintf('Eval %4d | Coste %.4f | Kp %.3f Ki %.3f Kd %.3f\n', ...
             eval_count, F, Kp, Ki, Kd);

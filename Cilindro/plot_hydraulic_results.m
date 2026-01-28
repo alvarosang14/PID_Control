@@ -9,7 +9,7 @@ t = resultados.XP_time;
 x = resultados.XP_data;
 ref = resultados.XP_ref;
 
-%% Gráfica posición
+%% Grafica posición
 figure;
 plot(t, x*1000, 'b', 'LineWidth', 2); hold on;
 yline(ref*1000, 'k--', 'Referencia');
